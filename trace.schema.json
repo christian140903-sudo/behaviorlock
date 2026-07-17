@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/christian140903-sudo/behaviorlock/main/trace.schema.json",
+  "title": "Behaviorlock Portable Trace",
+  "description": "Framework-neutral recorded observations for deterministic agent behavior comparison.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["traceVersion", "run", "scenarios"],
+  "properties": {
+    "$schema": { "type": "string", "format": "uri" },
+    "traceVersion": { "const": 1 },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "candidate"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "candidate": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "metadata": { "type": "object" }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "observations"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$" },
+          "status": { "enum": ["completed", "error", "skipped"] },
+          "observations": { "type": "object" }
+        }
+      }
+    }
+  }
+}
