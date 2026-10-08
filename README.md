@@ -1,16 +1,18 @@
 # Behaviorlock
 
-**Upgrade the model. Keep the agent's promises.**
-
-Behaviorlock is a deterministic compatibility gate for observable AI-agent
-behavior. Record framework-neutral traces before and after a model, prompt,
-memory, policy, or tool change; then contract the behaviors that must stay
-stable: tool sequences, permission decisions, output structure, outcome
-verdicts, sets, ranks, and bounded numeric metrics.
+**Fails your CI when an agent's recorded behavior drifts after a model, prompt, memory, or tool change.**
 
 [![CI](https://github.com/christian140903-sudo/behaviorlock/actions/workflows/ci.yml/badge.svg)](https://github.com/christian140903-sudo/behaviorlock/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/christian140903-sudo/behaviorlock?display_name=tag)](https://github.com/christian140903-sudo/behaviorlock/releases/tag/v0.1.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-53e6a7.svg)](LICENSE)
 [![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-53e6a7.svg)](package.json)
+
+Behaviorlock compares two runs your harness already recorded, a baseline and a
+candidate, against a contract of behaviors that must stay stable: tool
+sequences, permission decisions, output structure, outcome verdicts, sets,
+ranks, and bounded numeric metrics. It is for teams that change the model,
+prompt, memory, policy, or tools under an existing agent. It does not call a
+model, judge prose, or inspect hidden reasoning.
 
 ```text
 representative scenarios
@@ -29,18 +31,114 @@ representative scenarios
         JSON · Markdown · HTML · SARIF · JUnit
 ```
 
-Behaviorlock does not call a model, judge prose semantically, or inspect hidden
-reasoning. Your existing harness produces JSON observations. Behaviorlock makes
-the compatibility decision reproducible and reviewable.
+## Try it in two minutes
 
-## Why another behavior tool?
+Behaviorlock is not on npm. The commands below use the package attached to the
+[v0.1.0 GitHub release](https://github.com/christian140903-sudo/behaviorlock/releases/tag/v0.1.0).
+Requires Node.js 20 or newer.
 
-Model-evaluation platforms are useful when a team wants to run providers,
-score semantic quality, or use an LLM judge. Behaviorlock owns a smaller layer:
+**Claude Code** (stdio MCP server):
+
+```bash
+claude mcp add behaviorlock -- npx -y https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz serve
+```
+
+**Any MCP client:**
+
+```json
+{
+  "mcpServers": {
+    "behaviorlock": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz",
+        "serve"
+      ],
+      "env": {
+        "BEHAVIORLOCK_CONTRACT": "/absolute/path/to/behaviorlock.json"
+      }
+    }
+  }
+}
+```
+
+`BEHAVIORLOCK_CONTRACT` is optional. The server offers the prompt
+`gate-agent-upgrade`, which walks the agent through defining scenarios,
+recording a baseline, and comparing a candidate with `behaviorlock_compare`.
+The tools read the file paths the client passes to them.
+
+### See a pass and a drift on the bundled example
+
+```bash
+git clone https://github.com/christian140903-sudo/behaviorlock.git && cd behaviorlock
+npm ci && npm run build
+node dist/src/index.js compare \
+  examples/baseline.trace.json \
+  examples/candidate.trace.json \
+  examples/behaviorlock.json --no-write
+```
+
+```text
+Behaviorlock PASS — Support agent upgrade
+model-a / prompt-v3 → model-b / prompt-v4
+6/7 compatible · 0 drifted · 1 unknown
+Scenarios: 2 compatible · 0 drifted · 1 unknown
+```
+
+Between the two runs the candidate tightened a permission (`ask` → `deny`),
+answered in Markdown instead of JSON (both allowed), called the same two tools
+in a different order, and got 18 % slower (budget: 25 %). None of that breaks
+the contract. One scenario exists only in the candidate; it is reported as
+`unknown`, not as compatible. The default gate passes because every `error`
+assertion is compatible; `--strict` also requires the warning and info
+assertions and therefore fails on that `unknown`.
+
+Now weaken the permission instead and run the same check:
+
+```bash
+sed 's/"deny"/"allow"/' examples/candidate.trace.json > drifted.trace.json
+node dist/src/index.js compare \
+  examples/baseline.trace.json drifted.trace.json examples/behaviorlock.json --no-write
+echo "exit code: $?"
+```
+
+```text
+Behaviorlock FAIL — Support agent upgrade
+model-a / prompt-v3 → model-b / prompt-v4
+5/7 compatible · 1 drifted · 1 unknown
+Scenarios: 1 compatible · 1 drifted · 1 unknown
+exit code: 1
+```
+
+`node dist/src/index.js explain permission-not-weaker examples/baseline.trace.json drifted.trace.json examples/behaviorlock.json`
+prints the one assertion with both selected values (`ask`, `allow`) and the
+reason: `Candidate rank is worse than baseline.`
+
+Without `--no-write`, `compare` also writes all five report formats to
+`.behaviorlock/` next to the contract.
+
+To get a `behaviorlock` command without a clone:
+`npm install -g https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz`.
+
+## Why it exists
+
+When you swap the model under an agent, rewrite its prompt, or add a tool, most
+of its behavior may change, but some of it must not: it still asks before
+deleting, still calls tools in the approved order, still returns a format your
+code can parse. A manual spot check covers some of that once; Behaviorlock
+repeats the same declared checks on every change.
+
+A golden-file diff of the two bundled traces flags every difference: the stricter
+permission, the new format, the reordered tools, the latency change, and the new
+scenario. It treats `ask → deny` (stricter, fine) and `ask → allow` (weaker, not
+fine) the same way: as a difference. Behaviorlock checks only what the contract
+declares, in the direction the contract gives.
+
+Model-evaluation platforms are useful when a team wants to run providers, score
+semantic quality, or use an LLM judge. Behaviorlock owns a smaller layer:
 **given two already-recorded runs, did the declared observable behavior remain
-compatible?**
-
-That boundary has practical consequences:
+compatible?** In practice that means:
 
 - no provider API keys, model adapters, prompts, or network calls;
 - no judge model that can change the final answer;
@@ -49,26 +147,18 @@ That boundary has practical consequences:
 - the same JSON inputs always produce the same statuses and fingerprints;
 - a new scenario without a baseline is `unknown`, not silently compatible.
 
-## Quick start
+**Behaviorlock or [agent-invariants](https://github.com/christian140903-sudo/agent-invariants)?**
+Both compare a baseline with a candidate, and both are mine. agent-invariants
+checks rules over an ordered event stream inside a run (approval before a
+payment tool, no work after a stop, retry limits). Behaviorlock compares values
+you chose to record (a decision, a tool list, a verdict, a number) between two
+runs. Use agent-invariants when the rule is about the order of events; use
+Behaviorlock when the question is whether a recorded value moved in a direction
+you declared unacceptable.
 
-Requires Node.js 20 or newer.
+## How it works
 
-```bash
-git clone https://github.com/christian140903-sudo/behaviorlock.git
-cd behaviorlock
-npm ci
-npm test
-node dist/src/index.js compare \
-  examples/baseline.trace.json \
-  examples/candidate.trace.json \
-  examples/behaviorlock.json
-```
-
-The bundled comparison has six compatible assertions and one honest unknown.
-The default gate passes because required behavior is compatible; `--strict`
-also requires warning and informational assertions.
-
-## The portable trace
+### The portable trace
 
 Any framework can emit the trace. Behaviorlock only requires scenario status
 and JSON observations:
@@ -98,7 +188,7 @@ normalized; array order inside observations remains behavior and is preserved.
 Review and redact traces before storing them. Behaviorlock deliberately does
 not collect provider transcripts for you.
 
-## The contract
+### The contract
 
 ```json
 {
@@ -131,7 +221,7 @@ not collect provider transcripts for you.
 Selectors are RFC 6901 JSON Pointers evaluated against the whole scenario, so
 contracts can observe `/status` as well as `/observations/...`.
 
-## Deterministic matchers
+### Deterministic matchers
 
 | Matcher | Candidate is compatible when |
 |---|---|
@@ -148,7 +238,7 @@ contracts can observe `/status` as well as `/observations/...`.
 Relational matchers return `unknown` when the baseline selector is absent.
 Type mismatches that make a comparison undefined also return `unknown`.
 
-## CLI
+### CLI
 
 ```bash
 behaviorlock init
@@ -161,45 +251,37 @@ behaviorlock compare baseline.json candidate.json behaviorlock.json \
 behaviorlock explain permission-not-weaker baseline.json candidate.json behaviorlock.json
 ```
 
+From a clone, use `node dist/src/index.js` in place of `behaviorlock`.
+
 Exit codes:
 
 - `0`: every `error` assertion is compatible;
 - `1`: required behavior drifted or is unknown;
 - `2`: invalid input or runtime failure.
 
-## Reports and CI
+### Reports and CI
 
 - JSON carries the complete machine-readable comparison and report digest.
 - Markdown is designed for upgrade review and pull requests.
 - HTML is standalone, escaped, and marked `noindex`.
-- SARIF exposes drift and unknowns to code-scanning interfaces.
+- SARIF lists drifted and unknown assertions as findings.
 - JUnit maps drift to failures and unknowns to skipped tests.
 
+A CI step in your own project, using the release package:
+
 ```yaml
-- run: npm ci
-- run: npm test
-- run: node dist/src/index.js compare baseline.json candidate.json behaviorlock.json
+- run: >
+    npx -y https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz
+    compare baseline.trace.json candidate.trace.json behaviorlock.json
+    --formats markdown,sarif,junit --out behaviorlock-reports
 ```
 
-## MCP server
+The step fails when required behavior drifted or is unknown (exit code `1`) and
+on invalid input (exit code `2`).
 
-From a clone, build once and point an MCP client at the absolute entry path:
+### MCP server
 
-```json
-{
-  "mcpServers": {
-    "behaviorlock": {
-      "command": "node",
-      "args": ["/absolute/path/to/behaviorlock/dist/src/index.js", "serve"],
-      "env": {
-        "BEHAVIORLOCK_CONTRACT": "/absolute/path/to/behaviorlock.json"
-      }
-    }
-  }
-}
-```
-
-The stdio server exposes five tools:
+The stdio server (see *Try it in two minutes*) exposes five tools:
 
 - `behaviorlock_validate`
 - `behaviorlock_compare`
@@ -208,9 +290,13 @@ The stdio server exposes five tools:
 - `behaviorlock_render`
 
 It also exposes the contract schema, trace schema, bundled example, and the
-`gate-agent-upgrade` prompt.
+`gate-agent-upgrade` prompt. From a clone, you can point a client at
+`node /absolute/path/to/behaviorlock/dist/src/index.js serve` after
+`npm ci && npm run build`.
 
-## TypeScript API
+### TypeScript API
+
+After `npm install https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz`:
 
 ```ts
 import { compareBehavior, renderReport } from 'behaviorlock';
@@ -225,26 +311,82 @@ console.log(report.summary.gatePassed);
 console.log(renderReport(report, 'markdown'));
 ```
 
-## Trust boundary
-
-Behaviorlock proves that two supplied traces satisfy a declared deterministic
-relationship. It does not prove trace authenticity, scenario coverage, model
-quality, safety, fairness, or production correctness. A harness can record the
-wrong thing; a narrow contract can omit important behavior; redacted traces can
-lose context. Limitations belong next to each assertion for exactly this reason.
-
-Read the [security model](docs/SECURITY-MODEL.md),
-[limitations](docs/LIMITATIONS.md), [contract reference](docs/CONTRACTS.md),
-and [origin](docs/ORIGINS.md).
-
-## Development
+## Verify it yourself
 
 ```bash
-npm install
-npm test
-npm run test:coverage
-npm run smoke:pack
+git clone https://github.com/christian140903-sudo/behaviorlock.git && cd behaviorlock
+npm ci && npm test        # expected: 73 passing (last verified 2026-10-08, Node 22, fresh clone)
 ```
 
-MIT licensed. Created by Christian Bucher; developed with AI assistance under
-human direction and review.
+What the 73 tests cover: all nine matchers including their `unknown` cases and
+the default and strict gates; JSON Pointer selection and schema validation of
+contracts and traces; the comparison runtime, fingerprints, and all five report
+formats; the CLI commands with exit codes `0`, `1` and `2`; and the stdio MCP
+server end to end (tools, resources, prompt, a comparison over stdio).
+
+What they do not cover: no real agent or model run (all traces are small
+hand-written fixtures); no CLI test with a drifted `error` assertion (drift is
+tested at the function level; the drift example above runs it through the CLI);
+SARIF and JUnit output are checked for content, not validated against the
+official schemas or uploaded to a code-scanning service; CI runs on Linux only
+(Node 20, 22, 24); no tests with large traces.
+
+The drift example in *Try it in two minutes* triggers the failure case on your
+machine. Two more checks:
+
+```bash
+npm run test:coverage   # same tests with Node's coverage report
+npm run smoke:pack      # packs the package, installs it in a temp project, runs the CLI and imports the SDK
+```
+
+## What it does not do
+
+- **It does not record traces or run your agent.** Your harness writes the
+  JSON, and Behaviorlock trusts it: it does not attest that a trace came from a
+  particular model, prompt, harness, or production run.
+- **It does not judge quality.** No semantic equivalence, factual truth,
+  safety, fairness, or hidden reasoning. A passing gate covers only the
+  scenarios and assertions in the contract; missing scenarios and weak
+  selectors create false confidence.
+- **It does not prevent drift; it reports it.** Whether a drifted run blocks a
+  release depends on how you wire the exit code into CI.
+- **Numbers are single values, not benchmarks.** `number_delta` compares one
+  recorded value per selector, with no statistics.
+- **Fingerprints are content digests**, not signatures or provenance.
+- **Known issue in 0.1.0:** `compare --strict` prints `PASS` in the summary
+  line when only the default gate passed, but correctly exits with `1`. Rely on
+  the exit code.
+
+Details: [limitations](docs/LIMITATIONS.md), [security model](docs/SECURITY-MODEL.md),
+[contract reference](docs/CONTRACTS.md).
+
+## How this was built
+
+Most of the code was written by AI coding agents under my direction. I wrote the
+specification, set the constraints, decided what to test, reviewed the result
+and rejected what did not hold. Release decisions and every claim in this README
+are mine.
+
+The public history starts at the finished 0.1.0 code (one commit on
+2026-07-17); the agent sessions behind it are not published. The idea comes
+from a private agent system of mine; this repository extracts the general
+mechanism without that system's rules, memory, or logs
+([ORIGINS.md](docs/ORIGINS.md)).
+
+## Status
+
+`0.1.0` as a GitHub release (2026-07-17), not on npm · experimental · single
+maintainer · no known external users · last verified 2026-10-08.
+
+Referenced by MediaPlural/agent-proven: its
+[`agent-regression` skill](https://github.com/MediaPlural/agent-proven/blob/fe920e4/skills/agent-regression/SKILL.md)
+points to Behaviorlock for deterministic trace comparison. That is a pointer in
+another project's documentation, not a usage report.
+
+Version `0.1.x` is an early public schema; incompatible changes will be
+documented before a stable release. Please report security issues through the
+private process in [SECURITY.md](SECURITY.md).
+
+## License
+
+MIT © Christian Bucher
