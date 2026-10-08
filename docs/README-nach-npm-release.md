@@ -4,6 +4,25 @@ Prepared on 2026-10-08 for version 0.1.1. Nothing here is live: `README.md`
 keeps the release-tarball instructions until `behaviorlock` is actually on npm
 (`npm view behaviorlock` returned 404 on 2026-10-08).
 
+## Blocker: the unscoped name cannot be published
+
+`npm view behaviorlock` returns 404, but npm refuses to create a new package
+whose name equals an existing one once punctuation is removed
+([npm: new package moniker rules](https://blog.npmjs.org/post/168978377570/new-package-moniker-rules)).
+`behavior-lock` exists (an unrelated project, first published 2026-09-02), so
+`npm publish` of `behaviorlock` is expected to fail with "too similar to
+existing package".
+
+Options, each a decision for the maintainer: publish under a user scope
+(`@<npm-user>/behaviorlock`), under an organization scope, or under a new
+name. Any of them changes `name` in `package.json`, `identifier` in
+`server.json`, the package name in `scripts/release-smoke.mjs` and every
+command in the patch below; regenerate the patch after that change. The
+`behaviorlock` command name (`bin`) can stay: `npx -y @<scope>/behaviorlock
+serve` runs the bin that matches the unscoped part of the name.
+
+Until then, the patch and the blocks below describe the unscoped variant.
+
 ## How it is applied
 
 npmjs.com shows the README that is inside the published package. So the swap
