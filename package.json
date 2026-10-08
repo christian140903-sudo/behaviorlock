@@ -1,6 +1,6 @@
 {
   "name": "behaviorlock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Deterministic compatibility gates for observable AI-agent behavior across model, prompt, memory, and tool changes — CLI, SDK, CI, and MCP.",
   "type": "module",
   "main": "dist/src/index.js",

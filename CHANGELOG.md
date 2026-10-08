@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 — unreleased
 
 - `compare --strict` now prints `FAIL (strict)` in the summary line when the
   strict gate fails. In 0.1.0 the summary line always showed the default gate

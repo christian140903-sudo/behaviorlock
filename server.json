@@ -6,12 +6,12 @@
     "url": "https://github.com/christian140903-sudo/behaviorlock",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "behaviorlock",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "transport": { "type": "stdio" },
       "runtimeHint": "npx",
       "runtimeArguments": ["-y"],
