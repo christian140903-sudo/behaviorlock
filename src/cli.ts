@@ -6,6 +6,7 @@ import { loadContract, loadTrace } from './load.js';
 import { renderReport, writeReports } from './render.js';
 import { compareBehavior } from './runtime.js';
 import type { ReportFormat } from './types.js';
+import { BEHAVIORLOCK_VERSION } from './version.js';
 
 const FORMATS = new Set<ReportFormat>(['json', 'markdown', 'html', 'sarif', 'junit']);
 
@@ -132,7 +133,7 @@ function sampleContract() {
 async function exists(path: string): Promise<boolean> { try { await access(path, constants.F_OK); return true; } catch { return false; } }
 
 function usage(): string {
-  return `Behaviorlock 0.1.0 — deterministic compatibility gates for observable agent behavior
+  return `Behaviorlock ${BEHAVIORLOCK_VERSION} — deterministic compatibility gates for observable agent behavior
 
 Usage:
   behaviorlock init [contract] [--force]

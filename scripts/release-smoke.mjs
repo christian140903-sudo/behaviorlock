@@ -17,6 +17,10 @@ function run(command, args, options = {}) {
 }
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const { version } = JSON.parse(await readFile(join(projectRoot, 'package.json'), 'utf8'));
+const serverJson = JSON.parse(await readFile(join(projectRoot, 'server.json'), 'utf8'));
+assert.equal(serverJson.version, version, 'server.json version must match package.json');
+assert.ok(serverJson.packages.every((item) => item.version === version), 'server.json package versions must match package.json');
 const scratch = await mkdtemp(join(tmpdir(), 'behaviorlock-pack-'));
 let tarball;
 try {
@@ -30,9 +34,10 @@ try {
   await run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball], { cwd: scratch });
   const help = await run(join(scratch, 'node_modules', '.bin', 'behaviorlock'), ['--help'], { cwd: scratch });
   assert.match(help.stdout, /deterministic compatibility gates/i);
-  await run(process.execPath, ['--input-type=module', '--eval', "import { BEHAVIORLOCK_VERSION, selectPointer } from 'behaviorlock'; if (BEHAVIORLOCK_VERSION !== '0.1.0' || selectPointer({a:1}, '/a').value !== 1) process.exit(1);"], { cwd: scratch });
+  assert.ok(help.stdout.startsWith(`Behaviorlock ${version} `), `help must name version ${version}`);
+  await run(process.execPath, ['--input-type=module', '--eval', `import { BEHAVIORLOCK_VERSION, selectPointer } from 'behaviorlock'; if (BEHAVIORLOCK_VERSION !== '${version}' || selectPointer({a:1}, '/a').value !== 1) process.exit(1);`], { cwd: scratch });
   const installed = JSON.parse(await readFile(join(scratch, 'node_modules', 'behaviorlock', 'package.json'), 'utf8'));
-  assert.equal(installed.version, '0.1.0');
+  assert.equal(installed.version, version);
   console.log(`Release smoke passed: ${basename(tarball)} (${names.length} files)`);
 } finally {
   if (tarball) await rm(tarball, { force: true });

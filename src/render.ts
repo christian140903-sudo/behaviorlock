@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { AssertionResult, AssertionStatus, BehaviorReport, ReportFormat } from './types.js';
+import { BEHAVIORLOCK_VERSION } from './version.js';
 
 const ICON: Record<AssertionStatus, string> = { compatible: '✓', drifted: '✕', unknown: '?' };
 
@@ -53,7 +54,7 @@ export function renderHtml(report: BehaviorReport): string {
 
 export function renderSarif(report: BehaviorReport): string {
   const findings = report.scenarios.flatMap((scenario) => scenario.assertions).filter((assertion) => assertion.status !== 'compatible');
-  return `${JSON.stringify({ version: '2.1.0', $schema: 'https://json.schemastore.org/sarif-2.1.0.json', runs: [{ tool: { driver: { name: 'Behaviorlock', informationUri: 'https://github.com/christian140903-sudo/behaviorlock', version: '0.1.0', rules: findings.map((item) => ({ id: `behaviorlock/${item.id}`, shortDescription: { text: item.statement } })) } }, results: findings.map((item) => ({ ruleId: `behaviorlock/${item.id}`, level: item.severity === 'error' ? 'error' : item.severity === 'warning' ? 'warning' : 'note', message: { text: `${item.status}: ${item.reason}` }, locations: [{ physicalLocation: { artifactLocation: { uri: report.contractFile }, region: { startLine: 1 } } }] })) }] }, null, 2)}\n`;
+  return `${JSON.stringify({ version: '2.1.0', $schema: 'https://json.schemastore.org/sarif-2.1.0.json', runs: [{ tool: { driver: { name: 'Behaviorlock', informationUri: 'https://github.com/christian140903-sudo/behaviorlock', version: BEHAVIORLOCK_VERSION, rules: findings.map((item) => ({ id: `behaviorlock/${item.id}`, shortDescription: { text: item.statement } })) } }, results: findings.map((item) => ({ ruleId: `behaviorlock/${item.id}`, level: item.severity === 'error' ? 'error' : item.severity === 'warning' ? 'warning' : 'note', message: { text: `${item.status}: ${item.reason}` }, locations: [{ physicalLocation: { artifactLocation: { uri: report.contractFile }, region: { startLine: 1 } } }] })) }] }, null, 2)}\n`;
 }
 
 export function renderJunit(report: BehaviorReport): string {
