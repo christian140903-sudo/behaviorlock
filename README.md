@@ -14,6 +14,19 @@ ranks, and bounded numeric metrics. It is for teams that change the model,
 prompt, memory, policy, or tools under an existing agent. It does not call a
 model, judge prose, or inspect hidden reasoning.
 
+**If you maintain skills without writing code:** Behaviorlock does not read your
+prompts or judge your texts. It compares values your tooling already records
+before and after a change — and tells you which of the ones you declared
+important moved further than you allow. Example: a newsletter skill after a
+model update. Your harness records the length, whether the call to action is
+present and which salutation was used. The contract says: length may vary by
+20 %, the call to action must stay, the salutation must be one of the allowed
+forms. Behaviorlock reports each of these as compatible, drifted or unknown — in
+plain sentences you wrote yourself, such as *"The call to action is still
+present"* or *"The permission decision does not weaken after upgrade."*
+Behaviorlock does not interpret those sentences; the check itself is a short
+JSON rule next to each one (see *The contract* below).
+
 ```text
 representative scenarios
           │
