@@ -42,6 +42,7 @@
   "files": [
     "dist/src",
     "docs",
+    "!docs/README-nach-npm-release.*",
     "examples",
     "behaviorlock.schema.json",
     "trace.schema.json",

@@ -1,0 +1,96 @@
+diff --git a/README.md b/README.md
+index 55d14de..878b1e3 100644
+--- a/README.md
++++ b/README.md
+@@ -3,7 +3,7 @@
+ **Fails your CI when an agent's recorded behavior drifts after a model, prompt, memory, or tool change.**
+ 
+ [![CI](https://github.com/christian140903-sudo/behaviorlock/actions/workflows/ci.yml/badge.svg)](https://github.com/christian140903-sudo/behaviorlock/actions/workflows/ci.yml)
+-[![Release](https://img.shields.io/github/v/release/christian140903-sudo/behaviorlock?display_name=tag)](https://github.com/christian140903-sudo/behaviorlock/releases/tag/v0.1.0)
++[![npm](https://img.shields.io/npm/v/behaviorlock)](https://www.npmjs.com/package/behaviorlock)
+ [![License: MIT](https://img.shields.io/badge/License-MIT-53e6a7.svg)](LICENSE)
+ [![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-53e6a7.svg)](package.json)
+ 
+@@ -46,14 +46,12 @@ representative scenarios
+ 
+ ## Try it in two minutes
+ 
+-Behaviorlock is not on npm. The commands below use the package attached to the
+-[v0.1.0 GitHub release](https://github.com/christian140903-sudo/behaviorlock/releases/tag/v0.1.0).
+ Requires Node.js 20 or newer.
+ 
+ **Claude Code** (stdio MCP server):
+ 
+ ```bash
+-claude mcp add behaviorlock -- npx -y https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz serve
++claude mcp add behaviorlock -- npx -y behaviorlock serve
+ ```
+ 
+ **Any MCP client:**
+@@ -65,7 +63,7 @@ claude mcp add behaviorlock -- npx -y https://github.com/christian140903-sudo/be
+       "command": "npx",
+       "args": [
+         "-y",
+-        "https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz",
++        "behaviorlock",
+         "serve"
+       ],
+       "env": {
+@@ -131,8 +129,7 @@ reason: `Candidate rank is worse than baseline.`
+ Without `--no-write`, `compare` also writes all five report formats to
+ `.behaviorlock/` next to the contract.
+ 
+-To get a `behaviorlock` command without a clone:
+-`npm install -g https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz`.
++To get a `behaviorlock` command without a clone: `npm install -g behaviorlock`.
+ 
+ ## Why it exists
+ 
+@@ -280,11 +277,11 @@ Exit codes:
+ - SARIF lists drifted and unknown assertions as findings.
+ - JUnit maps drift to failures and unknowns to skipped tests.
+ 
+-A CI step in your own project, using the release package:
++A CI step in your own project, using the npm package:
+ 
+ ```yaml
+ - run: >
+-    npx -y https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz
++    npx -y behaviorlock@0.1.1
+     compare baseline.trace.json candidate.trace.json behaviorlock.json
+     --formats markdown,sarif,junit --out behaviorlock-reports
+ ```
+@@ -309,7 +306,7 @@ It also exposes the contract schema, trace schema, bundled example, and the
+ 
+ ### TypeScript API
+ 
+-After `npm install https://github.com/christian140903-sudo/behaviorlock/releases/download/v0.1.0/behaviorlock-0.1.0.tgz`:
++After `npm install behaviorlock`:
+ 
+ ```ts
+ import { compareBehavior, renderReport } from 'behaviorlock';
+@@ -366,9 +363,9 @@ npm run smoke:pack      # packs the package, installs it in a temp project, runs
+ - **Numbers are single values, not benchmarks.** `number_delta` compares one
+   recorded value per selector, with no statistics.
+ - **Fingerprints are content digests**, not signatures or provenance.
+-- **Known issue in 0.1.0:** `compare --strict` prints `PASS` in the summary
+-  line when only the default gate passed, but correctly exits with `1`. Rely on
+-  the exit code.
++- **Fixed in 0.1.1:** in 0.1.0, `compare --strict` printed `PASS` in the
++  summary line when only the default gate passed, while correctly exiting with
++  `1`. The summary line now shows the strict result.
+ 
+ Details: [limitations](docs/LIMITATIONS.md), [security model](docs/SECURITY-MODEL.md),
+ [contract reference](docs/CONTRACTS.md).
+@@ -388,8 +385,9 @@ mechanism without that system's rules, memory, or logs
+ 
+ ## Status
+ 
+-`0.1.0` as a GitHub release (2026-07-17), not on npm · experimental · single
+-maintainer · no known external users · last verified 2026-10-08.
++`0.1.1` on npm (first release: 0.1.0 as a GitHub release, 2026-07-17) ·
++experimental · single maintainer · no known external users · last verified
++2026-10-08.
+ 
+ Referenced by MediaPlural/agent-proven: its
+ [`agent-regression` skill](https://github.com/MediaPlural/agent-proven/blob/fe920e4/skills/agent-regression/SKILL.md)
