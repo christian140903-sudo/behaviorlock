@@ -1,6 +1,6 @@
 {
   "name": "behaviorlock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Deterministic compatibility gates for observable AI-agent behavior across model, prompt, memory, and tool changes — CLI, SDK, CI, and MCP.",
   "type": "module",
   "main": "dist/src/index.js",
@@ -42,6 +42,7 @@
   "files": [
     "dist/src",
     "docs",
+    "!docs/README-nach-npm-release.*",
     "examples",
     "behaviorlock.schema.json",
     "trace.schema.json",
@@ -60,7 +61,7 @@
   "engines": { "node": ">=20.0.0" },
   "publishConfig": { "access": "public" },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "zod": "^3.25.0"
   },
   "devDependencies": {

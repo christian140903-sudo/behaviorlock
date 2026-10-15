@@ -1,10 +1,10 @@
 # Origin
 
 Behaviorlock extracts a reusable mechanism from Christian Bucher's private
-Miguel system without publishing Miguel's identity rules, personal memory,
+AI-assisted development setup without publishing its identity rules, personal memory,
 session logs, hard-coded paths, or subjective scoring weights.
 
-Miguel contained an identity-drift monitor, explicit prediction-error loops,
+That setup contained an identity-drift monitor, explicit prediction-error loops,
 anti-performance checks, permission decisions, quality gates, and recovery
 prompts. The valuable general problem was not “score this personality.” It was:
 how can an agent change models, prompts, memory, or tools without silently

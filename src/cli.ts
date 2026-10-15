@@ -6,6 +6,7 @@ import { loadContract, loadTrace } from './load.js';
 import { renderReport, writeReports } from './render.js';
 import { compareBehavior } from './runtime.js';
 import type { ReportFormat } from './types.js';
+import { BEHAVIORLOCK_VERSION } from './version.js';
 
 const FORMATS = new Set<ReportFormat>(['json', 'markdown', 'html', 'sarif', 'junit']);
 
@@ -58,7 +59,7 @@ async function compareCommand(args: string[]): Promise<number> {
   const report = await compareBehavior(values[0], values[1], contractPath);
   if (!noWrite) await writeReports(report, outputDir, formats);
   if (args.includes('--json')) console.log(JSON.stringify(report, null, 2));
-  else console.log(summaryText(report, noWrite ? [] : formats.map((format) => `${outputDir}/behaviorlock-report.${extension(format)}`)));
+  else console.log(summaryText(report, strict, noWrite ? [] : formats.map((format) => `${outputDir}/behaviorlock-report.${extension(format)}`)));
   return (strict ? report.summary.strictGatePassed : report.summary.gatePassed) ? 0 : 1;
 }
 
@@ -99,9 +100,10 @@ function parseFormats(raw: string | undefined): ReportFormat[] {
 
 function extension(format: ReportFormat): string { return ({ json: 'json', markdown: 'md', html: 'html', sarif: 'sarif', junit: 'xml' })[format]; }
 
-function summaryText(report: Awaited<ReturnType<typeof compareBehavior>>, paths: string[]): string {
+function summaryText(report: Awaited<ReturnType<typeof compareBehavior>>, strict: boolean, paths: string[]): string {
+  const passed = strict ? report.summary.strictGatePassed : report.summary.gatePassed;
   return [
-    `Behaviorlock ${report.summary.gatePassed ? 'PASS' : 'FAIL'} — ${report.project.name}`,
+    `Behaviorlock ${passed ? 'PASS' : 'FAIL'}${strict ? ' (strict)' : ''} — ${report.project.name}`,
     `${report.baseline.candidate} → ${report.candidate.candidate}`,
     `${report.summary.compatible}/${report.summary.total} compatible · ${report.summary.drifted} drifted · ${report.summary.unknown} unknown`,
     `Scenarios: ${report.summary.compatibleScenarios} compatible · ${report.summary.driftedScenarios} drifted · ${report.summary.unknownScenarios} unknown`,
@@ -131,7 +133,7 @@ function sampleContract() {
 async function exists(path: string): Promise<boolean> { try { await access(path, constants.F_OK); return true; } catch { return false; } }
 
 function usage(): string {
-  return `Behaviorlock 0.1.0 — deterministic compatibility gates for observable agent behavior
+  return `Behaviorlock ${BEHAVIORLOCK_VERSION} — deterministic compatibility gates for observable agent behavior
 
 Usage:
   behaviorlock init [contract] [--force]

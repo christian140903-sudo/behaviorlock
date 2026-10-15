@@ -5,8 +5,9 @@ import { behaviorFingerprint } from './canonical.js';
 import { loadContract, loadTrace } from './load.js';
 import { renderReport } from './render.js';
 import { compareBehavior } from './runtime.js';
+import { BEHAVIORLOCK_VERSION } from './version.js';
 
-export const BEHAVIORLOCK_VERSION = '0.1.0';
+export { BEHAVIORLOCK_VERSION };
 const pathsSchema = { baseline: z.string().min(1), candidate: z.string().min(1), contract: z.string().min(1).optional() };
 
 function jsonResult(payload: unknown) { return { content: [{ type: 'text' as const, text: JSON.stringify(payload, null, 2) }] }; }

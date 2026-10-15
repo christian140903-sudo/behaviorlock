@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.1 — unreleased
+
+- `compare --strict` now prints `FAIL (strict)` in the summary line when the
+  strict gate fails. In 0.1.0 the summary line always showed the default gate
+  and could print `PASS` while the command correctly exited with `1`.
+- Raise the `@modelcontextprotocol/sdk` floor to `^1.32.1` and refresh the
+  lockfile. `npm audit` on a fresh clone goes from 7 findings (1 critical,
+  3 high, 3 moderate; all transitive through the SDK's HTTP and OAuth parts,
+  which the stdio server does not use) to 0. Installs from the v0.1.0 release
+  tarball already resolve SDK 1.32.1, since the tarball carries no lockfile.
+
 ## 0.1.0 — 2026-07-17
 
 - Define a framework-neutral portable behavior-trace format.

@@ -84,6 +84,7 @@ test('compare passes default gate and writes reports', async () => {
 test('strict compare fails the bundled unknown', async () => {
   const result = await run(['compare', baseline, candidate, contract, '--strict', '--no-write']);
   assert.equal(result.code, 1);
+  assert.match(result.stdout, /^Behaviorlock FAIL \(strict\) — /);
 });
 
 test('compare JSON is machine readable', async () => {
